@@ -3,6 +3,7 @@ import type { Parent, ScrollBlot } from 'parchment';
 import type Selection from '../core/selection.js';
 import TextBlot from './text.js';
 import type { EmbedContextRange } from './embed.js';
+import Inline from './inline.js';
 
 class Cursor extends EmbedBlot {
   static blotName = 'cursor';
@@ -120,8 +121,36 @@ class Cursor extends EmbedBlot {
       this.parent.insertBefore(mergedTextBlot, this);
     }
 
+    const parent = this.parent.clone();
     this.remove();
     if (range) {
+      console.log(parent, parent instanceof Inline);
+      // user clicked the inner side of a blot
+      // or tapped arrow keys to navigate left/right inside a blot
+      // in this case, the cursor should be placed exactly at the position
+      // FYI #1395
+      if (
+        !prevTextBlot &&
+        !nextTextBlot &&
+        this.selection.lastRange &&
+        parent instanceof Inline &&
+        range.native.collapsed &&
+        this.selection.lastNative?.start.node instanceof Text
+      ) {
+        const [startNode, startOffset, endNode, endOffset] =
+          this.selection.rangeToNative(this.selection.lastRange);
+        // in purpose to do not let scroll_before_update to recalculate cursor position
+        this.textNode = this.selection.lastNative.start.node;
+        if (startNode && endNode) {
+          return {
+            startNode,
+            startOffset,
+            endNode,
+            endOffset,
+          };
+        }
+        return null;
+      }
       // calculate selection to restore
       const remapOffset = (node: Node, offset: number) => {
         if (prevTextBlot && node === prevTextBlot.domNode) {
