@@ -219,7 +219,8 @@ class Quill {
     this.theme.addModule('input');
     this.theme.addModule('uiNode');
     this.theme.init();
-    this.emitter.on(Emitter.events.EDITOR_CHANGE, (type) => {
+    this.emitter.on(Emitter.events.EDITOR_CHANGE, (...args) => {
+      const type = args[0];
       if (type === Emitter.events.TEXT_CHANGE) {
         this.root.classList.toggle('ql-blank', this.editor.isBlank());
       }
@@ -865,6 +866,7 @@ function expandConfig(
 // Handle selection preservation and TEXT_CHANGE emission
 // common to modification APIs
 function modify(
+  this: Quill,
   modifier: () => Delta,
   source: EmitterSource,
   index: number | boolean,
@@ -893,7 +895,12 @@ function modify(
     this.setSelection(range, Emitter.sources.SILENT);
   }
   if (change.length() > 0) {
-    const args = [Emitter.events.TEXT_CHANGE, change, oldDelta, source];
+    const args = [
+      Emitter.events.TEXT_CHANGE,
+      change,
+      oldDelta,
+      source,
+    ] as const;
     this.emitter.emit(Emitter.events.EDITOR_CHANGE, ...args);
     if (source !== Emitter.sources.SILENT) {
       this.emitter.emit(...args);

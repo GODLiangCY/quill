@@ -459,15 +459,19 @@ class Selection {
           );
         }
       }
-      const args = [
-        Emitter.events.SELECTION_CHANGE,
-        cloneDeep(this.lastRange),
-        cloneDeep(oldRange),
-        source,
-      ];
-      this.emitter.emit(Emitter.events.EDITOR_CHANGE, ...args);
-      if (source !== Emitter.sources.SILENT) {
-        this.emitter.emit(...args);
+      const clonedRange = cloneDeep(this.lastRange);
+      const clonedOldRange = cloneDeep(oldRange);
+      if (clonedRange && clonedOldRange) {
+        const args = [
+          Emitter.events.SELECTION_CHANGE,
+          clonedRange,
+          clonedOldRange,
+          source,
+        ] as const;
+        this.emitter.emit(Emitter.events.EDITOR_CHANGE, ...args);
+        if (source !== Emitter.sources.SILENT) {
+          this.emitter.emit(...args);
+        }
       }
     }
   }

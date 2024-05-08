@@ -1,6 +1,8 @@
 import { EventEmitter } from 'eventemitter3';
 import instances from './instances.js';
 import logger from './logger.js';
+import type { Range } from './selection.js';
+import type Delta from 'quill-delta';
 
 const debug = logger('quill:events');
 const EVENTS = ['selectionchange', 'mousedown', 'mouseup', 'click'];
@@ -16,7 +18,20 @@ EVENTS.forEach((eventName) => {
   });
 });
 
-class Emitter extends EventEmitter<string> {
+interface EmitterTypes {
+  [Emitter.events.EDITOR_CHANGE]:
+    | [(typeof Emitter)['events']['TEXT_CHANGE'], Delta, Delta, EmitterSource]
+    | [
+        (typeof Emitter)['events']['SELECTION_CHANGE'],
+        Range,
+        Range,
+        EmitterSource,
+      ];
+  // any other events...
+  [key: string]: any[];
+}
+
+class Emitter extends EventEmitter<EmitterTypes> {
   static events = {
     EDITOR_CHANGE: 'editor-change',
     SCROLL_BEFORE_UPDATE: 'scroll-before-update',
@@ -47,9 +62,10 @@ class Emitter extends EventEmitter<string> {
     this.on('error', debug.error);
   }
 
-  emit(...args: unknown[]): boolean {
+  emit<T extends keyof EmitterTypes>(
+    ...args: [T, ...EmitterTypes[T]]
+  ): boolean {
     debug.log.call(debug, ...args);
-    // @ts-expect-error
     return super.emit(...args);
   }
 
